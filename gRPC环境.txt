@@ -1,0 +1,256 @@
+
+E:\grpc-master-linuxOK\grpc-master\win63_debug\Debug
+E:\grpc-master-linuxOK\grpc-master\win63_debug\third_party\protobuf\Debug\protoc -I ./ --cpp_out=. ./helloworld.proto
+E:\grpc-master-linuxOK\grpc-master\win63_debug\third_party\protobuf\Debug\protoc -I ./ --grpc_out=. --plugin=protoc-gen-grpc=grpc_cpp_plugin.exe  ./helloworld.proto
+
+..\lib32\protoc -I ./ --cpp_out=. ./client_svr_login.proto
+..\lib32\protoc -I ./ --grpc_out=. --plugin=protoc-gen-grpc=..\lib32\grpc_cpp_plugin.exe  ./client_svr_login.proto
+
+------------------------------------------------------------------------------------------------------------------------------
+
+kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib;
+wsock32.lib;
+ws2_32.lib;
+
+
+Debug\grpc.lib;
+Debug\gpr.lib;
+Debug\grpc++.lib;
+third_party\zlib\Debug\zlibstaticd.lib;
+third_party\cares\Debug\cares.lib;
+third_party\openssl\libeay32.lib;
+third_party\openssl\ssleay32.lib;
+third_party\protobuf\Debug\libprotobufd.lib;
+third_party\protobuf\Debug\libprotocd.lib;
+third_party\protobuf\Debug\libprotobuf-lited.lib
+
+1、库目录
+
+E:\grpc-master-linuxOK\grpc-master\win63_debug\third_party
+
+E:\grpc-master-linuxOK\grpc-master\win63_debug\
+
+2、c/C++附加包含目录：
+
+E:\grpc-master-linuxOK\grpc-master;E:\grpc-master-linuxOK\grpc-master\include;E:\grpc-master-linuxOK\grpc-master\third_party\boringssl\include;E:\grpc-master-linuxOK\grpc-master\third_party\protobuf\src;E:\grpc-master-linuxOK\grpc-master\third_party\benchmark\include;E:\grpc-master-linuxOK\grpc-master\third_party\zlib;E:\grpc-master-linuxOK\grpc-master\win63_debug\third_party\zlib;E:\grpc-master-linuxOK\grpc-master\third_party\cares;E:\grpc-master-linuxOK\grpc-master\third_party\cares\cares;E:\grpc-master-linuxOK\grpc-master\third_party\cares\config_windows;E:\grpc-master-linuxOK\grpc-master\win63_debug\third_party\cares\cares;E:\grpc-master-linuxOK\grpc-master\win63_debug\third_party\gflags\include;%(AdditionalIncludeDirectories)
+
+3、c/c++ --> 优化
+
+    全否  优化：禁用   启用内部函数：禁用
+
+4、预处理
+WIN32;_WINDOWS;_WIN32_WINNT=0x600;_SCL_SECURE_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;CARES_STATICLIB=1;WIN32_LEAN_AND_MEAN=1;CMAKE_INTDIR="Debug";%(PreprocessorDefinitions)
+
+5、代码生成
+
+   启动最小生成 ,设置为否
+
+6、语言  
+
+   启用运行时类型信息  设置为：是
+
+7、预编译头  设置为 否
+
+8、琏接器
+
+   输入：kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib;Debug\grpc.lib;Debug\gpr.lib;wsock32.lib;ws2_32.lib;third_party\zlib\Debug\zlibstaticd.lib;third_party\cares\Debug\cares.lib;third_party\openssl\libeay32.lib;third_party\openssl\ssleay32.lib;third_party\protobuf\Debug\libprotobufd.lib;third_party\protobuf\Debug\libprotocd.lib;third_party\protobuf\Debug\libprotobuf-lited.lib;Debug\grpc++.lib;
+
+
+//原有
+kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)
+//需新增
+kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib;wsock32.lib;ws2_32.lib;grpc.lib;gpr.lib;zlibstaticd.lib;cares.lib;libeay32.lib;ssleay32.lib;libprotobufd.lib;libprotocd.lib;libprotobuf-lited.lib;grpc++.lib;%(AdditionalDependencies)
+
+9、
+
+----------------------------------------------------------------------------------------------------------------------------
+
+grpc及protocbuff安装过程
+
+
+安装autoconf automake bison clang+llvm  libtool-2.4.2
+
+1、configure: error: C++ preprocessor “/lib/cpp” sanity check
+
+　　check See `config.log’ for more details
+
+
+
+
+　　解决办法：出现该情况是由于c++编译器的相关package没有安装，在终端上执行：
+
+　　$ sudo yum install glibc-headers gcc-c++
+
+2、 pkg-config安装
+
+3、protoc buff的目录
+
+   库文件:	/usr/local/lib 
+
+   头文件：/usr/local/include/google/protobuf/
+
+
+
+
+编译 .proto 文件  
+
+protoc -I=. --cpp_out=. BaseMessage.proto  
+
+protoc -I=. --cpp_out=. ContainerMessage.proto  
+
+生成BaseMessage.pb.h、BaseMessage.pb.cc  
+
+    ContainerMessage.pb.h、ContainerMessage.pb.cc
+
+
+
+
+4、protobuf 的pkgconfig目录
+
+   /usr/local/lib/pkgconfig/
+
+   protoc命令文件
+
+   /usr/local/bin
+
+
+
+
+5、/etc/profile加入一行
+
+    export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig/
+
+
+
+
+6、动态库连接
+
+   vim /etc/ld.so.conf
+
+插入：
+
+   /usr/local/protobuf/lib
+
+  然后生效：ldconfig
+
+
+运行:pkg-config --cflags protobuf
+
+显示  -pthread -I/usr/local/include
+
+--------------------------------------------------------
+
+gRPC
+
+1 依赖包
+　　　　1）benchmark-master.zip
+　　　　2）boringssl-2924.tar.gz
+　　　　3）gflags-master.zip
+　　　　4）googletest-master.zip
+　　　　5）protobuf-master.zip
+　　　　6）thrift-master.zip
+　　　　7）zlib-master.zip
+           ./configure --prefix=/usr/local/zlib
+           make/ make install 
+           cd /etc/ld.so.conf.d
+           vi zlib.conf加入/usr/local/zlib
+           ldconfig
+       8、cares.conf
+         运行c-ares解压目录下的buildconf
+         再在当前目录下运行autoconf configure.ac
+         然后就生成了configure文件
+         接下来安装就和其它库的正常安装方式相同了(同zlib)
+
+       把所有 ares_ssize_t 改为 size_t
+       #define ares_ssize_t size_t
+      下载 boringssl-master-with-bazel 拷贝一份到boringssl
+      关键:安装openssl-devel
+        yum install openssl-devel
+----------------------------------------------------------------------
+
+在windows使用protocbuff
+
+1、导入:#pragma comment(lib, "libprotobufd.lib")
+
+2、指定头文件所在：E:\protobuf\src   protocbuf的头文件
+
+3、拷贝libprotobuf.lib到代码相同目录
+
+4、addressbook.pb.cc addressbook.pb.h拷贝到代码目录.加入工程中
+
+5、修改c/c++/ Code Generation的Runtime Library为 Multi-threaded Debug(/MTd)
+
+    其它 比如：Multi-threaded Debug DLL (/MDd)会有错误。--估计是要服务库的原因。
+
+    否则会如有下类似的错误提示,改了之后，只是warning：
+
+error LNK2005: "public: __thiscall std::_Lockit::~_Lockit(void)" (??1_Lockit@std@@QAE@XZ) already defined in msvcprtd.lib(MSVCP100D.dll)
+
+6、addressbook.pb.cc 不使用预编译头
+   Not Using Precompiled Headers
+
+------------------------------------------------------------------------------
+1、windows mysql zip解压自版
+
+   解压后，需要初始化,初始化后，产生data目录内的数据
+
+   mysqld  --initialize  开始root的密码是随机，需要看data目录的SKY-20170422SFL.err log文件,文件名为主机名
+
+ 或mysqld   --initialize-insecure   这个方法需要mysql -u root --skip-password 登上mysql后，再用
+
+      ALTER USER 'root'@'localhost' IDENTIFIED BY 'new_password';  修改新密码
+
+2、mysql启动方法 
+
+   mysqld --console  控件台有信息输出
+
+   mysqld  --log-error  输出log
+
+   mysqladmin -u root -p shutdown  关闭
+
+----------------------------------------------------------------------
+
+  
+
+grpc-windows-master
+
+1、找不到openssl\rsa.h
+
+   把 盘符:\grpc-windows-master\3rdparty\openssl\openssl-win64\include\openssl整个目录拷贝到
+
+   盘符:\grpc-windows-master\grpc\grpc-release-0_13_0\include下面，
+
+   这个目录还有grpc, grpc++的头文件
+
+2、提示：无法打开输入文件"libeay32.lib"
+
+    将 盘符:\grpc-windows-master\3rdparty\openssl\openssl-win64\lib下面的libeay32.lib、ssleay32.lib 
+
+    拷贝到 盘符:\grpc-windows-master\zz_build_win64_release\grpc 下面, 这里是生成的exe文件目录
+
+3、提示:找不到 盘符:\grpc-windows-master\grpc\3rdparty\openssl\openssl-win64\bin\下的 libeay32.dll
+
+          其实在  盘符:\grpc-windows-master\3rdparty\openssl\openssl-win64\bin\下
+
+    把整个目录  盘符:\grpc-windows-master\3rdparty  3rdparty这个目录拷贝到 盘符:\grpc-windows-master\grpc 下
+
+
+
+
+waiting for 1 iomgr objects to be destroyed
+
+1 metadata strings were leaked
+
+
+
+
+
+
+
+
+
+
+
+
+
+
