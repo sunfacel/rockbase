@@ -1,0 +1,103 @@
+class A
+{
+public:
+  staticvoid staticmember(){cout<<"static"<<endl;}  //static member
+  void nonstatic(){cout<<"nonstatic"<<endl;}     //nonstatic member
+  virtualvoid virtualmember(){cout<<"virtual"<<endl;};//virtual member
+};
+int main()
+{
+  A a;
+  //static成员函数,取得的是该函数在内存中的实际地址，而且因为static成员是全局的，所以不能用A::限定符
+  void(*ptrstatic)()=&A::staticmember;   
+
+  //nonstatic成员函数 取得的是该函数在内存中的实际地址  
+  void(A::*ptrnonstatic)()=&A::nonstatic;
+
+  //虚函数取得的是虚函数表中的偏移值，这样可以保证能过指针调用时同样的多态效果
+  void(A::*ptrvirtual)()=&A::virtualmember;
+
+  //函数指针的使用方式
+  ptrstatic();
+  (a.*ptrnonstatic)();
+  (a.*ptrvirtual)();
+}
+
+--------------------------------------------------
+
+void main()
+{
+    class middle    //声明一个类，有三个成员，一个函数
+	{
+	public:
+		middle(const int a){ year = a;};
+		int calc(void){ int aa = 123; return 10;};
+		int year;
+		int month;
+		int day;
+	};
+
+	middle *mi = new middle(123);
+	std::cout << sizeof ( middle ) << std::endl;
+	std::cout << sizeof ( mi ) << std::endl;
+	std::cout << sizeof ( &mi ) << std::endl;
+	std::cout <<  ( &mi ) << std::endl;     //&mi值为地址0x0034f87c,这个地址指向的内容：0x00035c18(这里的内容为类内三个变量的值,每个int占4字节)
+
+	int (middle::*ptrnonstatic)()=&middle::calc;  第一种方法获得类函数偏移量，直接赋值.
+	std::cout <<  &ptrnonstatic << std::endl;   //&ptrnonstatic值为地址0x0034f870(比&mi值低),
+	                                            //地址指向的内容为：0x0128fe10(应该为函数执行地址),在这个内存段，可以找到变量aa值.
+
+	std::cout <<  (mi->*ptrnonstatic)() << std::endl;
+
+	int (middle::*pmf)(void);  第二种方法获得类函数偏移量，先定义一个指针变量
+    pmf = &middle::calc;  //获得的只是middle的偏移量
+
+	std::cout <<  (mi->*pmf)() << std::endl;    //对象的偏移量来执行,由于是类函数指针，对加上对象名来执行
+
+	std::cout <<  &( mi->year ) << std::endl;
+	std::cout <<  &( mi->month ) << std::endl;
+	std::cout <<  ( mi->year ) << std::endl;
+
+}
+
+
+--------------------------------
+1.一个指向外部函数的指针声明为：
+
+void(*pf)(char*,constchar*);
+void strcpy(char* dest,constchar* source);   //这个是外部函数，非类成员函数
+pf=strcpy;
+ 
+----------------------------------------
+
+
+ 1.一个指向外部函数的指针声明为：
+void(*pf)(char*,constchar*);
+void strcpy(char* dest,constchar* source);
+pf=strcpy;
+
+2.一个指向类A成员函数的指针声明为：
+
+void(A::*pmf)(char*,constchar*);
+
+声明的解释是：pmf是一个指向A成员函数的指针，返回无类型值，函数带有二个参数，
+参数的类型分别是char * 和 const char *。除了在星号前增加A:: ，
+与声明外部函数指针的方法一样。
+
+3.给成员指针赋值的方法是将函数名通过指针符号&赋予指针名。
+
+如下所示：
+
+class A
+{
+　　public:
+　　　void strcpy(char*,constchar*);
+　　　void strcat(char*,constchar*);
+};
+pmf =&A::strcpy;
+
+调用方法
+A *a = new A;
+  (a->*pmf)()
+ 
+

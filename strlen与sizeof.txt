@@ -1,0 +1,65 @@
+
+sizeof为运算符,可以用类型作参数.
+strlen为函数,只能用char *作参数，计算直到"\0"结尾的长度.
+    数组做sizeof参数不退化，而strlen退化为指针.
+
+char strValue[32] = { 0 };
+sizeof( strValue )  结果为32;
+strlen( strValue )  结果为0;
+
+char strValue[32];
+sizeof( strValue )  结果为32;
+strlen( strValue )  结果为不定; 由于strValue未初始化，需要计算直到后面有"\0"才能确定长度.
+
+
+strcpy( strValue,"ABC" );
+
+sizeof( strValue )  结果为32;
+strlen( strValue )  结果为3;
+
+
+sizeof (int)   结果为4
+sizeof (&strValue)  结果为4
+sizeof (char)   结果为1
+sizeof (long)   结果为4
+sizeof (long long)   结果为8
+sizeof (float)   结果为4
+sizeof (double)   结果为8
+-----以上结果值，与系统及位数有关
+
+char *str_Phone = "";
+
+strlen (str_Phone)  结果为0
+sizeof (str_Phone)  结果为4 ，即是指针
+
+strcpy(str_Phone, "ABC" );  内存溢出，因为str_Phone为0
+
+------------------------------------------------
+char *str_Phone = "";
+&str_Phone 为地址值0x0032FBE0， 在这个地址上四个字节为：2e 34 51 01，即是str_Phone的值(地址)： 0x0151342e, 0x0151342e地址上值为:0x00
+  由上面可知，str_Phone为指针变量，这个变量值0x0151342e指向的 *str_Phone的值为0x00;
+
+------------------------------------------------
+char str_Phone [32] = {0};
+
+str_Phone的地址就是0x0030f720,使用&str_Phone取地址，也是0x0030f720. 也就是str_Phone是数组名，数组名是地址，
+
+
+---------------------------------------------------
+
+main()
+{
+   class middle 
+	{
+	public:
+		middle(const int a){ year = a;};
+		int year;
+		int month;
+		int day;
+	};
+
+	middle *mi = new middle(123);
+	std::cout << sizeof ( middle ) << std::endl;    //输出为12，因为有三个int变量，如果没有这三个变量，就为1
+	std::cout << sizeof ( mi ) << std::endl;        //输出4，就是一个指针长度
+	std::cout <<  ( mi->year ) << std::endl;        //输出123
+}
