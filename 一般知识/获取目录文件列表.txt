@@ -1,0 +1,55 @@
+
+
+
+/******************************************************************************************************/
+//Name:      GetFilePath();
+//Describe:
+//      　获得目录下所有文件.
+//        传入目标 和文件名称列表的指针:
+//        返回void.
+// Subject: C++
+// Author  :Hunk
+// Add Date :2007.12.14
+/******************************************************************************************************/
+
+void GetFilePath(CString strPath, CStringList * pstrNameList)
+{
+ CFileFind ff;        //定义一个CfileFind对象
+ BOOL  bFlag;
+ if (!ff.FindFile(strPath))  //打开以strPath为目标的文件查询，并检查调用是否成功
+  return;
+ while (ff.FindNextFile()) //查找下个文件
+ {
+  if (ff.IsDots())
+   continue;
+  if (ff.IsDirectory())
+  {
+   CString strTemp;
+   Int  lie;
+   strTemp = ff.GetFilePath(); //取道目录的全路径
+   if (strTemp.Right(1) != "\\")
+    strTemp += "\\";
+   int lie = strPath.ReverseFind('\\'); 
+   strTemp += strPath.Right(strPathName.GetLength() - lie - 1); //生成路径  
+   GetFilePath(strTemp, pstrNameList); //递归调用函数
+  }
+  else
+   pstrNameList->AddTail(ff.GetFilePath()); //加入文件列表
+ }
+ if (!ff.IsDots())
+ {
+  if (ff.IsDirectory())
+  {
+   CString strTemp;
+   strTemp = ff.GetFilePath();
+   if (strTemp.Right(1) != "\\")
+    strTemp += "\\";
+   strTemp += GetFileName(strPath);
+   GetFilePath(strTemp, pstrNameList);
+  }
+  else
+   pstrNameList->AddTail(ff.GetFilePath());
+ }
+ ff.Close();
+} 
+

@@ -1,0 +1,45 @@
+         int (*p)[4];
+         int RollNum[30][4];
+         int *q[5];
+         RollNum[0][0]=123;
+         RollNum[0][1]=321;
+         RollNum[1][0]=1321;
+         RollNum[1][1]=2321;
+         q[0]=RollNum[0];
+         q[1]=RollNum[1];
+         p=RollNum;
+	 TRACE("---%d\n",*(q[1]+1));
+	 TRACE("---%d\n",*(p[1]+1));
+//上面的TRACE输出的结果是一样；
+//q[0]同q[1]一样保存指针，而(*p)[4]是四元素数组指针，可以很多四个元素s
+
+
+int *p; 　　　 p为指向整型量的指针变量
+int *p[n]; 　　p为指针数组，由n个指向整型量的指针元素组成。
+int (*p)[n]; 　p为指向整型二维数组的指针变量，二维数组的列数为n
+int *p() 　　　p为返回指针值的函数，该指针指向整型量
+int (*p)() 　　p为指向函数的指针，该函数返回整型量
+int **p 　　　 p为一个指向另一指针的指针变量，该指针指向一个整型量。
+//例一:
+        int *p;
+	int a = 234;
+	p = &a;
+	printf("%d\n",*p);
+//例二:
+        int *p[10];    //p为指针数组，由n个指向整型量的指针元素组成。
+	int a=123;     
+	int b = 321;
+	p[0] = &a;    //地址给第一个元素
+	p[1] = &b;
+	printf("%d---%d\n",*p[0],*p[1]);   //输出
+//例三:
+        int (*p)[4];    //p为指向整型二维数组的指针变量，二维数组的列数为n
+	int pp[10][4];
+	pp[1][1] = 123;
+	p = pp;
+	printf("%d\n",*((*(p+1))+1));
+
+        static char *name[]={ "Illegal day","Monday","Tuesday","Wednesday",
+				"Thursday","Friday","Saturday","Sunday"};
+	printf("%s\n",*(name+1));
+

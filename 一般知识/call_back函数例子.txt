@@ -1,0 +1,74 @@
+void caller(void(*ptr)())
+{
+    ptr(); /* 调用ptr指向的函数 */ 
+}
+
+void func()
+{
+    printf("Show ptr Function!\n");
+};
+
+int main(int argc, char* argv[])
+{
+
+  void (*p) (); //p是指向某函数的指针
+  p = func; 
+  caller(p); /* 传递函数地址到调用者 */
+
+ return 0;
+}
+
+///以下也可以:
+/**************************
+int main(int argc, char* argv[])
+{
+
+	caller(func);
+
+	return 0;
+}
+*****************************/
+
+
+///带参数传到callback函数
+void callback(void (*called)(char *b),char *b)
+{
+	called(b);
+}
+
+void calledFun(char *a)
+{
+	printf("Complete!--%s\n",a);
+}
+
+int main(int argc, char* argv[])
+{
+	void (*p)(char *a);
+	p = calledFun;
+	callback(p,"aa55");
+	return 0;
+}
+
+
+//////////////////////////////////
+void caller(void(*ptr)())
+{
+
+    ptr(); /* 调用ptr指向的函数 */ 
+}
+
+void func()
+{
+	printf("Show ptr Function!\n");
+};
+
+int main(int argc, char* argv[])
+{
+
+  void (*p) (); //p是指向某函数的指针
+  p = func; 
+  caller(p);    /* 传递函数地址到调用者 */
+  caller(func); /* 传递函数地址到调用者 */
+
+ return 0;
+}

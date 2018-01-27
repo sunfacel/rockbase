@@ -1,0 +1,167 @@
+内存对齐问题
+
+选择自 hongyang1980 的 Blog  
+关键字   内存对齐问题 
+出处    
+ 
+ 什么是内存对齐
+
+    考虑下面的结构：
+
+         struct foo
+         {
+           char c1;
+           short s;
+           char c2;
+           int i;
+          };
+    
+    假设这个结构的成员在内存中是紧凑排列的，假设c1的地址是0，那么s的地址就应该是1，c2的地址就是3，i的地址就是4。也就是
+    c1 00000000, s 00000001, c2 00000003, i 00000004。
+
+    可是，我们在Visual c/c++ 6中写一个简单的程序：
+
+         struct foo a;
+    printf("c1 %p, s %p, c2 %p, i %p\n",
+        (unsigned int)(void*)&a.c1 - (unsigned int)(void*)&a,
+        (unsigned int)(void*)&a.s - (unsigned int)(void*)&a,
+        (unsigned int)(void*)&a.c2 - (unsigned int)(void*)&a,
+        (unsigned int)(void*)&a.i - (unsigned int)(void*)&a);
+    运行，输出：
+         c1 00000000, s 00000002, c2 00000004, i 00000008。
+
+    为什么会这样？这就是内存对齐而导致的问题。
+
+为什么会有内存对齐
+
+    以下内容节选自《Intel Architecture 32 Manual》。
+    字，双字，和四字在自然边界上不需要在内存中对齐。（对字，双字，和四字来说，自然边界分别是偶数地址，可以被4整除的地址，和可以被8整除的地址。）
+    无论如何，为了提高程序的性能，数据结构（尤其是栈）应该尽可能地在自然边界上对齐。原因在于，为了访问未对齐的内存，处理器需要作两次内存访问；然而，对齐的内存访问仅需要一次访问。
+    一个字或双字操作数跨越了4字节边界，或者一个四字操作数跨越了8字节边界，被认为是未对齐的，从而需要两次总线周期来访问内存。一个字起始地址是奇数但却没有跨越字边界被认为是对齐的，能够在一个总线周期中被访问。
+    某些操作双四字的指令需要内存操作数在自然边界上对齐。如果操作数没有对齐，这些指令将会产生一个通用保护异常（#GP）。双四字的自然边界是能够被16整除的地址。其他的操作双四字的指令允许未对齐的访问（不会产生通用保护异常），然而，需要额外的内存总线周期来访问内存中未对齐的数据。
+
+编译器对内存对齐的处理
+
+    缺省情况下，c/c++编译器默认将结构、栈中的成员数据进行内存对齐。因此，上面的程序输出就变成了：
+c1 00000000, s 00000002, c2 00000004, i 00000008。
+编译器将未对齐的成员向后移，将每一个都成员对齐到自然边界上，从而也导致了整个结构的尺寸变大。尽管会牺牲一点空间（成员之间有空洞），但提高了性能。
+也正是这个原因，我们不可以断言sizeof(foo) == 8。在这个例子中，sizeof(foo) == 12。
+
+如何避免内存对齐的影响
+
+    那么，能不能既达到提高性能的目的，又能节约一点空间呢？有一点小技巧可以使用。比如我们可以将上面的结构改成：
+
+struct bar
+{
+    char c1; 
+    char c2;
+    short s;
+    int i;
+};
+    这样一来，每个成员都对齐在其自然边界上，从而避免了编译器自动对齐。在这个例子中，sizeof(bar) == 8。
+
+    这个技巧有一个重要的作用，尤其是这个结构作为API的一部分提供给第三方开发使用的时候。第三方开发者可能将编译器的默认对齐选项改变，从而造成这个结构在你的发行的DLL中使用某种对齐方式，而在第三方开发者哪里却使用另外一种对齐方式。这将会导致重大问题。
+    比如，foo结构，我们的DLL使用默认对齐选项，对齐为
+c1 00000000, s 00000002, c2 00000004, i 00000008，同时sizeof(foo) == 12。
+而第三方将对齐选项关闭，导致
+    c1 00000000, s 00000001, c2 00000003, i 00000004，同时sizeof(foo) == 8。
+
+如何使用c/c++中的对齐选项
+
+    vc6中的编译选项有 /Zp[1|2|4|8|16] ，/Zp1表示以1字节边界对齐，相应的，/Zpn表示以n字节边界对齐。n字节边界对齐的意思是说，一个成员的地址必须安排在成员的尺寸的整数倍地址上或者是n的整数倍地址上，取它们中的最小值。也就是：
+    min ( sizeof ( member ),  n)
+    实际上，1字节边界对齐也就表示了结构成员之间没有空洞。
+    /Zpn选项是应用于整个工程的，影响所有的参与编译的结构。
+    要使用这个选项，可以在vc6中打开工程属性页，c/c++页，选择Code Generation分类，在Struct member alignment可以选择。
+
+    要专门针对某些结构定义使用对齐选项，可以使用#pragma pack编译指令。指令语法如下：
+#pragma pack( [ show ] | [ push | pop ] [, identifier ] , n  )
+    意义和/Zpn选项相同。比如：
+
+#pragma pack(1)
+struct foo_pack
+{
+    char c1;
+    short s;
+    char c2;
+    int i;
+};
+#pragma pack()
+
+栈内存对齐
+
+    我们可以观察到，在vc6中栈的对齐方式不受结构成员对齐选项的影响。（本来就是两码事）。它总是保持对齐，而且对齐在4字节边界上。
+
+验证代码
+
+#include <stdio.h>
+
+struct foo
+{
+    char c1;
+    short s;
+    char c2;
+    int i;
+};
+
+struct bar
+{
+    char c1; 
+    char c2;
+    short s;
+    int i;
+};
+
+#pragma pack(1)
+struct foo_pack
+{
+    char c1;
+    short s;
+    char c2;
+    int i;
+};
+#pragma pack()
+
+
+int main(int argc, char* argv[])
+{
+    char c1;
+    short s;
+    char c2;
+    int i;
+
+    struct foo a;
+    struct bar b;
+    struct foo_pack p;
+
+    printf("stack c1 %p, s %p, c2 %p, i %p\n",
+        (unsigned int)(void*)&c1 - (unsigned int)(void*)&i,
+        (unsigned int)(void*)&s - (unsigned int)(void*)&i,
+        (unsigned int)(void*)&c2 - (unsigned int)(void*)&i,
+        (unsigned int)(void*)&i - (unsigned int)(void*)&i);
+
+    printf("struct foo c1 %p, s %p, c2 %p, i %p\n",
+        (unsigned int)(void*)&a.c1 - (unsigned int)(void*)&a,
+        (unsigned int)(void*)&a.s - (unsigned int)(void*)&a,
+        (unsigned int)(void*)&a.c2 - (unsigned int)(void*)&a,
+        (unsigned int)(void*)&a.i - (unsigned int)(void*)&a);
+
+    printf("struct bar c1 %p, c2 %p, s %p, i %p\n",
+        (unsigned int)(void*)&b.c1 - (unsigned int)(void*)&b,
+        (unsigned int)(void*)&b.c2 - (unsigned int)(void*)&b,
+        (unsigned int)(void*)&b.s - (unsigned int)(void*)&b,
+        (unsigned int)(void*)&b.i - (unsigned int)(void*)&b);
+
+    printf("struct foo_pack c1 %p, s %p, c2 %p, i %p\n",
+        (unsigned int)(void*)&p.c1 - (unsigned int)(void*)&p,
+        (unsigned int)(void*)&p.s - (unsigned int)(void*)&p,
+        (unsigned int)(void*)&p.c2 - (unsigned int)(void*)&p,
+        (unsigned int)(void*)&p.i - (unsigned int)(void*)&p);
+
+    printf("sizeof foo is %d\n", sizeof(foo));
+    printf("sizeof bar is %d\n", sizeof(bar));
+    printf("sizeof foo_pack is %d\n", sizeof(foo_pack));
+    
+    return 0;
+} 
+ 

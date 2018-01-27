@@ -1,0 +1,170 @@
+1.
+#include<stdio.h>
+void f(int i)
+{
+  printf("i = %d\n", i);
+}
+
+int main()
+{
+        unsigned long add;
+        add = (unsigned long)f;
+        ((void (*)(int))add)(10);  //(void (*)(int))的方式可以将一个地址转换
+                                   //成一个带int参数且没有返回值的函数的指针类型
+        (*(void (*)(int))add)(20); //一样
+        return 0;
+}
+
+可以将 ((void (*)(int))add)(10) 转换为 ：typedef void (*FUNC_ADDR)(int);
+调用 ：((FUNC_ADDR)add)(10)；
+2.
+以下一样转换
+----------------------------------------------------------------------
+void fun()
+{
+}
+int main()
+{
+   printf("%p  %p  %p\n", &fun, fun, *fun);  //输出值一样,p指针
+   return 0;
+}
+---------------------------------------------------------------------
+3.函数指针数组的用法.
+#include<stdio.h>
+int max(int v1, int v2)
+{
+        return (v1 > v2 ? v1 : v2);
+}
+
+int min(int v1, int v2)
+{
+        return (v1 < v2 ? v1 : v2);
+}
+
+int sum(int v1, int v2)
+{
+        return (v1 + v2);
+}
+
+int main()
+{
+        int (*p[3])(int, int);  //如果定义typedef int (*pfun)(int, int);
+                                //可用 pfun p[3];
+        p[0] = max;
+        p[1] = min;
+        p[2] = sum;
+
+        printf("p[0] = %d\n", (p[0])(3, 5));
+        printf("p[1] = %d\n", (p[1])(4, 6));
+        printf("p[2] = %d\n", (p[2])(1, 2));
+        return 0;
+}
+-------------------------------------------------------
+4.返回一个指向数组的指针的方式
+#include<stdio.h>
+#include<stdlib.h>
+int (*p())[10]
+{
+        int (*m)[10];     // 如果typedef int (*pfun)[10];
+                          //可用pfun m;
+        int i;
+        m = (int (*)[10])malloc(10 * sizeof(int));
+        if (m == NULL)
+        {
+                printf("malloc error\n");
+                exit(1);
+        }
+        for (i = 0; i < 10; i++)
+                *(*m+i) = i+1;
+        return m;
+}
+
+int main()
+{
+        int (*a)[10];
+        int i;
+        a = p();
+        for (i = 0; i < 10; i++)
+                printf("%d ", *(*a+i));
+        printf("\ndone\n");
+        return 0;
+}
+-----------------------------------------------------------
+5.返回一个函数指针的指针	
+对这个问题, signal()函数是最好的例子,
+
+void (*signal (int signo, void (*func)(int)))(int);
+很多朋友刚开始看这个函数定义的时候是不太懂, 其实可以一步一步地慢慢看, 我以前是这样分析的, 希望能对大家有用. 
+int (*p)();
+这是一个函数指针, p所指向的函数是一个不带任何参数, 并且返回值为int的一个函数.
+int (*fun())();
+这个式子与上面式子的区别在于用fun()代替了p,而fun()是一个函数,所以说就可以看成是fun()这个函数执行之后,它的返回值是一个函数指针,这个函数指针(其实就是上面的p)所指向的函数是一个不带任何参数,并且返回值为int的一个函数.所以说对于
+
+void (*signal(int signo, void (*fun)(int)))(int);
+就可以看成是signal()函数(它自己是带两个参数,一个为整型,一个为函数指针的函数), 而这个signal()函数的返回值也为一个函数指针,这个函数指针指向一个带一个整型参数,并且返回值为void的一个函数.
+signal函数返回的其实是指向以前的信号处理程序的指针, 所以举一个例子来说明返回指向函数的指针的用法,如:
+
+#include<signal.h>
+#include<stdlib.h>
+#include<stdio.h>
+
+void sig_fun2(int signo)
+{
+        printf("in sig_fun2:%d\n", signo);
+}
+
+void sig_fun1(int signo)
+{
+        printf("in sig_fun1:%d\n", signo);
+}
+
+int main()
+{
+        unsigned long i;
+        if (signal(SIGUSR1, sig_fun1) == SIG_ERR)
+        {
+                printf("signal fun1 error\n");
+                exit(1);
+        }
+
+        (signal(SIGUSR1, sig_fun2))(30);
+
+        printf("done\n");
+        return 0;
+}
+
+-------------------------------------------------------------------
+6. 使用函数指针作为参数的情况
+在函数的参数中, 可能会带有一个函数指针, 这在signal()函数中是出现了的, 另外再写个例子如:
+#include<stdio.h>
+
+int max(int v1, int v2)
+{
+        return (v1 > v2 ? v1 : v2);
+}
+
+int min(int v1, int v2)
+{
+        return (v1 < v2 ? v1 : v2);
+}
+
+int sum(int v1, int v2)
+{
+        return (v1 + v2);
+}
+
+int fun(int a, int b, int (*call)(int, int))  //如果定义了typedef int (*pfun)(int, int);
+                                              //就可以:int fun(int a, int b, pfun call)
+{
+        return (call(a, b));
+}
+
+int main()
+{
+        printf("max=%d\n", fun(1, 2, max));
+        printf("min=%d\n", fun(3, 4, min));
+        printf("sum=%d\n", fun(5, 6, sum));
+        return 0;
+}
+
+------------------------------------------------

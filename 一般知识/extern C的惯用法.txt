@@ -1,0 +1,67 @@
+extern "C"的惯用法
+ 
+ 
+（1）在C++中引用C语言中的函数和变量，在包含C语言头文件（假设为cExample.h）时，需进行下列处理：
+
+extern "C"
+{
+      #include "cExample.h"
+}
+　　而在C语言的头文件中，对其外部函数只能指定为extern类型，C语言中不支持extern "C"声明，在.c文件中包含了extern "C"时会出现编译语法错误。
+
+　　C++引用C函数例子工程中包含的三个文件的源代码如下：
+
+/* c语言头文件：cExample.h */
+#ifndef C_EXAMPLE_H
+#define C_EXAMPLE_H
+extern int add(int x,int y);
+#endif
+
+/* c语言实现文件：cExample.c */
+#include "cExample.h"
+int add( int x, int y )
+{
+     return x + y;
+}
+
+// c++实现文件，调用add：cppFile.cpp
+extern "C" 
+{
+     #include "cExample.h"
+}
+int main(int argc, char* argv[])
+{
+     add(2,3); 
+     return 0;
+}
+
+　　如果C++调用一个C语言编写的.DLL时，当包括.DLL的头文件或声明接口函数时，应加extern "C" {　}。
+
+（2）在C中引用C++语言中的函数和变量时，C++的头文件需添加extern "C"，但是在C语言中不能直接引用声明了extern "C"的该头文件，应该仅将C文件中将C++中定义的extern "C"函数声明为extern类型。
+　　C引用C++函数例子工程中包含的三个文件的源代码如下：
+
+//C++头文件 cppExample.h
+#ifndef CPP_EXAMPLE_H
+#define CPP_EXAMPLE_H
+extern "C" int add( int x, int y );
+#endif
+
+
+//C++实现文件 cppExample.cpp
+#include "cppExample.h"
+int add( int x, int y )
+{
+     return x + y;
+}
+
+
+/* C实现文件 cFile.c
+/* 这样会编译出错：#include "cExample.h" */
+extern int add( int x, int y );
+int main( int argc, char* argv[] )
+{
+     add( 2, 3 ); 
+     return 0;
+}
+ 
+ 

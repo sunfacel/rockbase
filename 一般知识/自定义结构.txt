@@ -1,0 +1,18 @@
+/*
+// 定义一个结构的类型
+*/
+typedef struct product_sen{
+       char *pro_name_eng;
+	   char *pro_name_cn;
+	   int pro_type;
+	   char *pro_cata_eng;
+	   char *pro_cata_cn;
+}Product_tag;
+
+
+Product_tag Product_YPT_Type[] = {
+	{"Exit-only ticket","出站票",1,"Multiride","计次"},
+	{"Station working ticket","车站工作票",2,"Period","定期"},
+	{"Unspecified","未指定",255,"This is a reserved value to be used where the ProductType_t is not known.","该保留值用在ProductType_t未知的地方."},
+	NULL
+};

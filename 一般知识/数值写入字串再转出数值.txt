@@ -1,0 +1,20 @@
+	char szBuff[100];
+	memset(szBuff,0,sizeof(szBuff));
+
+	CString tmpBuff ="abcdefg";
+    DWORD dwLen = tmpBuff.GetLength()+11111699;
+
+    memcpy(szBuff,&dwLen,sizeof(DWORD));
+
+	memcpy(szBuff+sizeof(DWORD),tmpBuff,tmpBuff.GetLength());
+
+    TRACE("%x\n",*szBuff & 0x00ff);    // &0x00FF 可以除去输出前面的FFFFF
+    TRACE("%x\n",*(szBuff+1) & 0x00ff);
+    TRACE("%x\n",*(szBuff+2) & 0x00ff);
+    TRACE("%x\n",*(szBuff+3) & 0x00ff);
+
+    DWORD dw;
+	dw=szBuff[0] & 0x000000ff;   //移位得到数值
+	dw+=(szBuff[1]8) & 0x0000ff00;
+	dw+=(szBuff[2]16) & 0x00ff0000;
+	dw+=(szBuff[3]24) & 0xff000000;

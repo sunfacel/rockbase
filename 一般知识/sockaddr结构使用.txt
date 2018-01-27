@@ -1,0 +1,16 @@
+       //字符串IP地址转为unsigned long;
+       //unsigned long 转为字符串;        
+        struct sockaddr_in sockin;;
+        sockin.sin_addr.s_addr=inet_addr("192.168.0.219");
+	printf("%u\n",sockin.sin_addr.s_addr);
+	printf("%s\n",inet_ntoa(sockin.sin_addr));
+	return 0;
+
+        struct sockaddr_in addr;
+        struct in_addr  sinaddr;
+	sinaddr.S_un.S_addr=inet_addr("192.168.0.219");
+	addr.sin_family=AF_INET;
+	addr.sin_port=9090;
+	addr.sin_addr=sinaddr;
+	printf("%s\n",inet_ntoa(sinaddr));
+    printf("%d\n",sinaddr.S_un.S_addr);

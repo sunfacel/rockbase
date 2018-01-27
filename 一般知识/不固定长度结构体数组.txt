@@ -1,0 +1,45 @@
+
+//下面定义一个结构体：
+typedef struct emp_data {
+    wchar_t* name;
+    wchar_t* dep;
+    wchar_t* job;
+    wchar_t* prev_jobs[10];
+} emp_data_t;
+
+//定义一个结构体数组，这里数组元素不定长；可以有10个prev_jobs
+//
+struct emp_data EmpData[] = {
+{ L"John Smith", L"MAN", L"Director", { L"Borland", L"IBM", L"MontaVista", NULL } },
+{ L"Alice Watson", L"MAN", L"Receptionist", { NULL } },
+{ L"Fill Jackson", L"MAN", L"Sale manager", { L"Microsoft", NULL } },
+{ L"Dick Bond", L"R&D", L"Project manager", { L"MontaVista", L"Microsoft", NULL } },
+{ L"Jun Sun", L"R&D", L"Developer", { L"Trolltech", L"SGI", L"MontaVista", NULL } },
+{ L"Van Lee", L"R&D", L"Developer", { L"Microsoft", NULL } },
+{ L"Yuri Vasiljev", L"R&D", L"Developer", { L"SGI", NULL } },
+{ L"Helen Orbsson", L"R&D", L"Technical writer", { L"IBM", L"SGI", NULL } },
+{ L"Bruce Lenderman", L"QA", L"Tester", { L"MontaVista", NULL } },
+{ L"Jane Gorn", L"QA", L"Tester", { L"SGI", NULL } },
+{ L"Alice Bush", L"QA", L"Tester", { L"Borland", NULL } },
+{ L"Arnold Shwarzenegger", L"SECUR", L"Security manager", { L"Reiffaisen Bank", NULL } },
+{ NULL, NULL, NULL }
+}; 
+
+
+   //可以用下面语句取出字符串；
+  printf("%ls\t\t\n",EmpData->dep);
+	printf("%ls\t\t\n",(EmpData->prev_jobs)[1]);
+	//但是如果在prev_jobs不知道个数的情况下，可以如下:
+
+	struct emp_data* e_ptr = EmpData;  //EmpData是上面定义的数组
+	
+  if (e_ptr->prev_jobs) {
+    int j, n = 0;
+    wchar_t** prev_j = e_ptr->prev_jobs;
+      while(*prev_j++) n++;  //通过n判断有几个prev_jobs
+
+          prev_j = e_ptr->prev_jobs;
+          for(j = 0; j < n; j++)   //通过一个循环取出多个prev_job
+             Record_vwsPrevJob_put(&Obj, j, prev_j[j], wcslen(prev_j[j]));
+   }
+
