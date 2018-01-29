@@ -1,20 +1,38 @@
-﻿转UTF-8:  11100100 10111000 10100101
-原码:          100   111000   100101
+﻿转UTF-8:  11100100 10111000 10100101   E4 B8 A5
+原码:          100   111000   100101   4E 25
 
 原码Unicode两个字节(4E 25)，转为UTF-8为三个字节
 
 
 严字
-1、小端存储，Unicode在文件中二进制为：
+1、小端存储，Unicode方式，带BOM，在文件中二进制为, UCS-2 LE BOM：
 FF FE 25 4E   
 
-2、utf-8的严字在文件中二进制为：
-EF BB BF E4 B8 A5
-
-3、ansi的gb-2312在文件中存储为
-D1 CF
-
-4、大端存储
+2、大端存储,Unicode方式,带BOM，在文件中二进制为, UCS-2 BE BOM：
 FE FF 4E 25
 
+3、utf-8的严字在文件中二进制为,默认带BOM, UTF-8-BOM：
+EF BB BF E4 B8 A5
+
+4、utf-8的严字在文件中二进制为,无BOM, UTF-8：
+E4 B8 A5
+
+5、ansi的gb-2312在文件中存储为,没有BOM, ANSI:
+D1 CF
+
+
+
 ------------------------------------------------------
+
+char localchar[128] = "a严";
+   内存中为  61 D1 CF
+
+string tmp_char = "a严重严重";  //如果是char字符串，同样也是 d1 cf(严) 
+   内存中为   61 d1 cf d6 d8 d1 cf d6 d8
+
+wstring source333 = String2WString( tmp_char);
+   内存中，字符串为： 61 00 25 4e cd 91 25 4e cd 91    //25 4e 转为Unicode的编码
+
+
+WCHAR str3[]=L"abcde";    //每个字符两个字节
+WCHAR str4[]=L"严是中国人";    //每个字符占两个字节  严字编码为：25 4e
