@@ -1,0 +1,47 @@
+
+
+
+class AA
+{
+public:
+	BOOL Start();
+	virtual BOOL PreInstance();
+};
+
+BOOL AA::Start()
+{
+	PreInstance();
+	return TRUE;
+}
+
+BOOL AA::PreInstance()
+{
+	std::cout << "1-----" << std::endl;
+	return true;
+}
+
+class BB : public AA
+{
+public:
+	virtual BOOL PreInstance();
+};
+
+BOOL BB::PreInstance()
+{
+	std::cout << "2-----" << std::endl;
+	return true;
+}
+
+int main()
+{
+   BB b;
+   b.Start();
+   return 0;
+}
+
+
+1.父类执行子类中的方法
+  上面父类的方法 PreInstance为 virtual,所以start函数调用子类的 PreInstance，
+   如果去掉  virtual,则只会执行父类的 PreInstance.
+2.
+  
