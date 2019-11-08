@@ -1,0 +1,823 @@
+win32 透明窗口无边框模版
+2018-01-19 14:24:55 小乌龟在大乌龟背上 阅读数 1924 文章标签： win32透明窗口无边框 更多
+分类专栏： C/C++|VC|DS
+版权声明：本文为博主原创文章，遵循 CC 4.0 BY-SA 版权协议，转载请附上原文出处链接和本声明。
+本文链接：https://blog.csdn.net/what951006/article/details/79106306
+直接copy就可以用，主要用于造轮子，
+封了一个类
+
+#pragma once
+#include <atomic>
+#include <windows.h>
+
+
+class SplashWindow
+{
+public:
+	SplashWindow();
+	~SplashWindow();
+	static void globalInit();
+
+	static void globalUnInit();
+
+	bool createWnd(void);
+
+	void adjustWindowSize(int cx,int cy);
+
+	void setCenterShow();
+
+	void show(bool show_window = true);
+
+	void exec();
+
+	void stop();
+
+	void update();
+
+	HWND getHwnd();
+
+protected:
+	virtual void onPaintEvent();
+
+protected:
+	static LRESULT CALLBACK WindowProcedure(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
+
+	void createMemDC(HWND hwnd, int cx, int cy );
+
+	void deleteMemDC();
+
+	HWND hwnd_ = NULL;
+	HDC mem_dc_ = NULL;
+	HBITMAP mem_bitmap_= NULL;
+	
+};
+
+//////////////////////////////////////////////////CPP
+#include "SplashWindow.h"
+
+#include <algorithm>
+#include <windows.h> 
+#include <tchar.h>
+#include <gdiplus.h> 
+#pragma  comment(lib,"Gdiplus.lib")
+
+ULONG_PTR gdiplusStartupToken;
+
+#define SW_CLASS_NAME _T("BaseBaseWin")
+
+
+
+bool SplashWindow::createWnd(void)
+{
+	WNDCLASSEX wincl;        /* Data structure for the windowclass */
+							 /* The Window structure */
+	wincl.hInstance = GetModuleHandle(NULL);
+	wincl.lpszClassName = SW_CLASS_NAME;//+-69+ 
+	wincl.lpfnWndProc = WindowProcedure;      /* This function is called by windows */
+	wincl.cbSize = sizeof(WNDCLASSEX);
+
+	/* Use default icon and mouse-pointer */
+	wincl.hIcon = NULL;
+	wincl.hIconSm = NULL;
+	wincl.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wincl.lpszMenuName = NULL;                 /* No menu */
+	wincl.cbClsExtra = 0;                      /* No extra bytes after the window class */
+	wincl.cbWndExtra = 0;                      /* structure or the window instance */
+											   /* Use Windows's default colour as the background of the window */
+	wincl.hbrBackground = (HBRUSH)COLOR_BACKGROUND;
+	/* Register the window class, and if it fails quit the program */
+	if (RegisterClassEx(&wincl))
+	{
+		HWND hwnd = CreateWindowEx(
+		WS_EX_LAYERED,                   /* Extended possibilites for variation */
+		SW_CLASS_NAME,         /* classname */
+		_T("QAQSplash"),       /* Title Text */
+		WS_POPUP, /* default window */
+		0,       /* Windows decides the position */
+		0,       /* where the window ends up on the screen */
+		500,                 /* The programs width */
+		500,                 /* and height in pixels */
+		NULL,        /* The window is a child-window to desktop */
+		NULL,                /* No menu */
+		GetModuleHandle(NULL),       /* Program Instance handler */
+		this                 /* No Window Creation data */
+		);
+		if (hwnd)
+			return true;
+	}
+	return false;
+}
+
+void  SplashWindow::setCenterShow() {
+	long scrWidth, scrHeight;
+	RECT rect;
+	scrWidth = GetSystemMetrics(SM_CXSCREEN);
+	scrHeight = GetSystemMetrics(SM_CYSCREEN);
+	GetWindowRect(hwnd_, &rect);
+	SetWindowPos(hwnd_, HWND_TOPMOST, (scrWidth - rect.right) / 2, (scrHeight - rect.bottom) / 2, rect.right - rect.left, rect.bottom - rect.top, SWP_SHOWWINDOW);
+}
+
+void SplashWindow::adjustWindowSize(int cx, int cy)
+{
+	RECT re; 
+	::GetWindowRect(hwnd_, &re);
+	::MoveWindow(hwnd_, re.left, re.top, cx, cy, true);
+}
+
+
+void SplashWindow::onPaintEvent()
+{
+	HDC dc = GetDC(hwnd_);
+	RECT wndRect;
+	::GetWindowRect(hwnd_, &wndRect);
+	SIZE wndSize = { wndRect.right - wndRect.left,wndRect.bottom - wndRect.top };
+
+	Gdiplus::Graphics graphics(mem_dc_);
+	//Gdiplus::SolidBrush bru(Gdiplus::Color(255, 255, 0, 0));
+	//Gdiplus::Rect re(0, 0, wndSize.cx, wndSize.cy);
+	//graphics.FillRectangle(&bru, re);
+
+	graphics.DrawImage(&Gdiplus::Image(L"C:\\BG.PNG"), 0, 0, wndSize.cx, wndSize.cy);
+
+	POINT ptsrc{ 0,0 };
+	POINT ptDest = { wndRect.left,wndRect.top };
+	BLENDFUNCTION blend = { AC_SRC_OVER, 0, (BYTE)(255.0), AC_SRC_ALPHA };
+	UpdateLayeredWindow(hwnd_, dc, &ptDest, &wndSize, mem_dc_, &ptsrc, 0, &blend, ULW_ALPHA);
+	::ReleaseDC(hwnd_, dc);
+}
+
+LRESULT CALLBACK SplashWindow::WindowProcedure(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	SplashWindow *  target_obj= (SplashWindow *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+	switch (message)                  /* handle the messages */
+	{
+	case WM_NCCREATE:
+	{
+		SplashWindow* remote = (SplashWindow*)((CREATESTRUCT*)lParam)->lpCreateParams;
+		SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)remote);
+		remote->hwnd_ = hwnd;
+	}
+	break;
+	case WM_NCDESTROY:
+	{
+		target_obj->hwnd_ = NULL;
+		SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)NULL);
+		PostQuitMessage(0);       /* send a WM_QUIT to the message queue */
+	}
+	break;
+	case WM_CREATE:
+	{
+
+	}
+	break;
+	case WM_DESTROY:
+	{
+
+	}
+	break;
+	case WM_SIZE:
+	{
+		if(target_obj)
+		{
+			int nW = LOWORD(lParam);
+			int nH = HIWORD(lParam);
+			target_obj->createMemDC(hwnd, nW , nH);
+			target_obj->update();
+		}
+	}
+	break;
+	case WM_PAINT:
+	{
+
+	}
+	break;
+	default:                      /* for messages that we don't deal with */
+		return DefWindowProc(hwnd, message, wParam, lParam);
+	}
+	return DefWindowProc(hwnd, message, wParam, lParam);
+}
+
+
+SplashWindow::SplashWindow()
+{
+	
+}
+
+
+SplashWindow::~SplashWindow()
+{
+	
+}
+
+void SplashWindow::globalInit()
+{
+	Gdiplus::GdiplusStartupInput gdiInput;
+	Gdiplus::GdiplusStartup(&gdiplusStartupToken, &gdiInput, NULL);
+}
+
+void SplashWindow::globalUnInit()
+{
+	Gdiplus::GdiplusShutdown(gdiplusStartupToken);
+}
+
+void SplashWindow::show(bool show_window)
+{
+	ShowWindow(hwnd_ ,show_window? SW_SHOW :SW_HIDE);
+
+}
+
+void SplashWindow::exec()
+{
+	MSG messages;
+	while (GetMessage(&messages, NULL, 0, 0))
+	{
+		TranslateMessage(&messages);
+		DispatchMessage(&messages);
+	}
+
+	
+
+}
+
+void SplashWindow::stop()
+{
+	PostMessage(hwnd_, WM_CLOSE, 0, 0);
+}
+
+void SplashWindow::update()
+{
+	onPaintEvent();
+}
+
+HWND SplashWindow::getHwnd()
+{
+	return hwnd_;
+}
+
+void SplashWindow::createMemDC(HWND hwnd, int cx, int cy)
+{
+	deleteMemDC();
+
+	HDC dc = GetDC(hwnd);
+	mem_dc_ = ::CreateCompatibleDC(dc);
+
+	BITMAPINFO bitmapinfo;
+	bitmapinfo.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+	bitmapinfo.bmiHeader.biBitCount = 32;
+	bitmapinfo.bmiHeader.biHeight = cy;
+	bitmapinfo.bmiHeader.biWidth = cx;
+	bitmapinfo.bmiHeader.biPlanes = 1;
+	bitmapinfo.bmiHeader.biCompression = BI_RGB;
+	bitmapinfo.bmiHeader.biXPelsPerMeter = 0;
+	bitmapinfo.bmiHeader.biYPelsPerMeter = 0;
+	bitmapinfo.bmiHeader.biClrUsed = 0;
+	bitmapinfo.bmiHeader.biClrImportant = 0;
+	bitmapinfo.bmiHeader.biSizeImage =
+		bitmapinfo.bmiHeader.biWidth * bitmapinfo.bmiHeader.biHeight *
+		bitmapinfo.bmiHeader.biBitCount / 8;
+	mem_bitmap_ = ::CreateDIBSection(mem_dc_, &bitmapinfo, 0, NULL, 0, 0);
+	SelectObject(mem_dc_, mem_bitmap_);
+
+	ReleaseDC(hwnd, dc);
+}
+
+void SplashWindow::deleteMemDC()
+{
+	::DeleteDC(mem_dc_);
+	::DeleteObject(mem_bitmap_);
+
+	mem_dc_ = NULL;
+	mem_bitmap_ = NULL;
+}
+
+
+
+////use it  使用方法
+SplashWindow window;
+window.adjustWindowSize(125, 125);
+window.setCenterShow();
+window.show();
+window.exec();
+//////////////////////////////////////////////////////////
+
+//WS_EX_LAYERED + CreateDIBSection + UpdateLayeredWindow，首选这种方式！！
+
+
+#include <windows.h> 
+#include <gdiplus.h> 
+#pragma  comment(lib,"Gdiplus.lib")
+
+ULONG_PTR gdiplusStartupToken;
+LRESULT CALLBACK WindowProcedure(HWND, UINT, WPARAM, LPARAM);
+
+char szClassName[] = "YUIDialog";
+
+int WINAPI WinMain(HINSTANCE hThisInstance,
+	HINSTANCE hPrevInstance,
+	LPSTR lpszArgument,
+	int nCmdShow)
+{
+	Gdiplus::GdiplusStartupInput gdiInput;
+	Gdiplus::GdiplusStartup(&gdiplusStartupToken, &gdiInput, NULL);
+	WNDCLASSEX wincl;        /* Data structure for the windowclass */
+
+							 /* The Window structure */
+	wincl.hInstance = hThisInstance;
+	wincl.lpszClassName = szClassName;//+-69+ 
+	wincl.lpfnWndProc = WindowProcedure;      /* This function is called by windows */
+	wincl.style = CS_DBLCLKS;                 /* Catch double-clicks */
+	wincl.cbSize = sizeof(WNDCLASSEX);
+
+	/* Use default icon and mouse-pointer */
+	wincl.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+	wincl.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+	wincl.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wincl.lpszMenuName = NULL;                 /* No menu */
+	wincl.cbClsExtra = 0;                      /* No extra bytes after the window class */
+	wincl.cbWndExtra = 0;                      /* structure or the window instance */
+											   /* Use Windows's default colour as the background of the window */
+	wincl.hbrBackground = (HBRUSH)COLOR_BACKGROUND;
+	/* Register the window class, and if it fails quit the program */
+	if (!RegisterClassEx(&wincl))
+		return 0;
+	/* The class is registered, let's create the program*/
+	HWND hwnd = CreateWindowEx(
+		WS_EX_LAYERED,                   /* Extended possibilites for variation */
+		szClassName,         /* Classname */
+		"Title",       /* Title Text */
+		WS_POPUP, /* default window */
+		500,       /* Windows decides the position */
+		300,       /* where the window ends up on the screen */
+		500,                 /* The programs width */
+		500,                 /* and height in pixels */
+		NULL,        /* The window is a child-window to desktop */
+		NULL,                /* No menu */
+		hThisInstance,       /* Program Instance handler */
+		NULL                 /* No Window Creation data */
+	);
+		
+	ShowWindow(hwnd, nCmdShow);
+
+	MSG messages;
+	while (GetMessage(&messages, NULL, 0, 0))
+	{
+		TranslateMessage(&messages);
+		DispatchMessage(&messages);
+	}
+
+	Gdiplus::GdiplusShutdown(gdiplusStartupToken);
+	return messages.wParam;
+}
+
+
+HDC g_memDC = NULL;
+HBITMAP g_memBitmap = NULL;
+void copyToCurDC(HWND hwnd)
+{
+	HDC dc = GetDC(hwnd);
+	RECT wndRect;
+	::GetWindowRect(hwnd, &wndRect);
+	SIZE wndSize = { wndRect.right - wndRect.left,wndRect.bottom - wndRect.top };
+
+	Gdiplus::Graphics graphics(g_memDC);
+	Gdiplus::SolidBrush bru(Gdiplus::Color(255, 255, 0, 0));
+	Gdiplus::Rect re(0, 0, wndSize.cx, wndSize.cy);
+	graphics.FillRectangle(&bru, re);
+
+	graphics.DrawImage(&Gdiplus::Image(L"C:\\BG.PNG"), 0, 0, wndSize.cx, wndSize.cy);
+
+	//g_memDC;
+	POINT ptDest = { wndRect.left,wndRect.top };
+	BLENDFUNCTION blend = { AC_SRC_OVER, 0, (BYTE)(255.0), AC_SRC_ALPHA };
+	UpdateLayeredWindow(hwnd, dc, &ptDest, &wndSize, g_memDC, &POINT{ 0,0 }, 0, &blend, ULW_ALPHA);
+	::ReleaseDC(hwnd,dc);
+}
+
+LRESULT CALLBACK WindowProcedure(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	switch (message)                  /* handle the messages */
+	{
+	case WM_CREATE:
+	{
+		//::SetLayeredWindowAttributes(hwnd, RGB(0, 0, 0), 255, LWA_ALPHA);
+	}
+	break;
+	case WM_SIZE:
+	{
+		::DeleteDC(g_memDC);
+		::DeleteObject(g_memBitmap);
+
+		int nW = LOWORD(lParam);
+		int nH = HIWORD(lParam);
+
+		HDC dc = GetDC(hwnd);
+		g_memDC = ::CreateCompatibleDC(dc);
+
+		BITMAPINFO bitmapinfo;
+		bitmapinfo.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+		bitmapinfo.bmiHeader.biBitCount = 32;
+		bitmapinfo.bmiHeader.biHeight = nH;
+		bitmapinfo.bmiHeader.biWidth = nW;
+		bitmapinfo.bmiHeader.biPlanes = 1;
+		bitmapinfo.bmiHeader.biCompression = BI_RGB;
+		bitmapinfo.bmiHeader.biXPelsPerMeter = 0;
+		bitmapinfo.bmiHeader.biYPelsPerMeter = 0;
+		bitmapinfo.bmiHeader.biClrUsed = 0;
+		bitmapinfo.bmiHeader.biClrImportant = 0;
+		bitmapinfo.bmiHeader.biSizeImage =
+			bitmapinfo.bmiHeader.biWidth * bitmapinfo.bmiHeader.biHeight *
+			bitmapinfo.bmiHeader.biBitCount / 8;
+		g_memBitmap = ::CreateDIBSection(g_memDC, &bitmapinfo, 0, NULL, 0, 0);
+		SelectObject(g_memDC, g_memBitmap);
+		
+		ReleaseDC(hwnd, dc);
+
+		copyToCurDC(hwnd);
+	}
+	break;
+	case WM_DESTROY:
+		PostQuitMessage(0);       /* send a WM_QUIT to the message queue */
+		break;
+	case WM_LBUTTONDOWN:
+		::SendMessage(hwnd, WM_NCLBUTTONDOWN, HTCAPTION, 0);
+		break;
+	default:                      /* for messages that we don't deal with */
+		return DefWindowProc(hwnd, message, wParam, lParam);
+	}
+	return 0;
+}
+
+///////////////////////////////////////////////
+
+//使用 WS_EX_LAYERED+UpdateLayeredWindow方式实现
+
+#include <windows.h> 
+#include <gdiplus.h> 
+#include <windowsx.h>
+#pragma  comment(lib,"Gdiplus.lib")
+
+ULONG_PTR gdiplusStartupToken;
+
+LRESULT CALLBACK WindowProcedure(HWND, UINT, WPARAM, LPARAM);
+
+char szClassName[] = "YUIDialog";
+
+int WINAPI WinMain(HINSTANCE hThisInstance,
+	HINSTANCE hPrevInstance,
+	LPSTR lpszArgument,
+	int nCmdShow)
+{
+	Gdiplus::GdiplusStartupInput gdiInput;
+	Gdiplus::GdiplusStartup(&gdiplusStartupToken, &gdiInput, NULL);
+
+	WNDCLASSEX wincl;        /* Data structure for the windowclass */
+
+							 /* The Window structure */
+	wincl.hInstance = hThisInstance;
+	wincl.lpszClassName = szClassName;//+-69+ 
+	wincl.lpfnWndProc = WindowProcedure;      /* This function is called by windows */
+	wincl.style = CS_DBLCLKS;                 /* Catch double-clicks */
+	wincl.cbSize = sizeof(WNDCLASSEX);
+
+	/* Use default icon and mouse-pointer */
+	wincl.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+	wincl.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+	wincl.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wincl.lpszMenuName = NULL;                 /* No menu */
+	wincl.cbClsExtra = 0;                      /* No extra bytes after the window class */
+	wincl.cbWndExtra = 0;                      /* structure or the window instance */
+											   /* Use Windows's default colour as the background of the window */
+	wincl.hbrBackground = (HBRUSH)COLOR_BACKGROUND;
+
+	/* Register the window class, and if it fails quit the program */
+	if (!RegisterClassEx(&wincl))
+		return 0;
+
+	/* The class is registered, let's create the program*/
+	HWND hwnd = CreateWindowEx(
+		WS_EX_LAYERED,                   /* Extended possibilites for variation */
+		szClassName,         /* Classname */
+		"Title",       /* Title Text */
+		WS_POPUP, /* default window */
+		500,       /* Windows decides the position */
+		300,       /* where the window ends up on the screen */
+		500,                 /* The programs width */
+		500,                 /* and height in pixels */
+		NULL,        /* The window is a child-window to desktop */
+		NULL,                /* No menu */
+		hThisInstance,       /* Program Instance handler */
+		NULL                 /* No Window Creation data */
+	);
+
+	ShowWindow(hwnd, nCmdShow);
+
+	MSG messages;
+	while (GetMessage(&messages, NULL, 0, 0))
+	{
+		/* Translate virtual-key messages into character messages */
+		TranslateMessage(&messages);
+		/* Send message to WindowProcedure */
+		DispatchMessage(&messages);
+	}
+
+	Gdiplus::GdiplusShutdown(gdiplusStartupToken);
+	/* The program return-value is 0 - The value that PostQuitMessage() gave */
+	return messages.wParam;
+}
+
+
+/*  This function is called by the Windows function DispatchMessage()  */
+HDC g_memDC = NULL;
+HBITMAP g_memBitmap = NULL;
+LRESULT CALLBACK WindowProcedure(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	switch (message)                  /* handle the messages */
+	{
+	case WM_SIZE:
+	{
+		::DeleteDC(g_memDC);
+		::DeleteObject(g_memBitmap);
+
+		int nW = LOWORD(lParam);
+		int nH = HIWORD(lParam);
+
+		HDC dc = GetDC(hwnd);
+		g_memDC = ::CreateCompatibleDC(dc);
+		g_memBitmap = ::CreateCompatibleBitmap(dc, nW, nH);
+		::SelectObject(g_memDC, g_memBitmap);
+		ReleaseDC(hwnd, dc);
+
+		PostMessage(hwnd, WM_PAINT, NULL, NULL);
+	}
+	break;
+	case WM_ERASEBKGND:
+		return 1;
+	case WM_PAINT:
+	{
+		PAINTSTRUCT ps;
+		HDC dc = BeginPaint(hwnd, &ps);
+
+		RECT wndRect = ps.rcPaint;
+		if (wndRect.bottom == wndRect.top && wndRect.right == wndRect.left)
+		{
+			::GetWindowRect(hwnd, &wndRect);
+		}
+		SIZE wndSize = { wndRect.right - wndRect.left,wndRect.bottom - wndRect.top };
+
+	
+		Gdiplus::Graphics graphics(g_memDC);
+		
+
+		Gdiplus::SolidBrush bru(Gdiplus::Color(255,0,255,0));
+		Gdiplus::Rect re(0,0,wndSize.cx,wndSize.cy);
+		//graphics.FillRectangle(&bru,re);
+		graphics.DrawImage(&Gdiplus::Image(L"C:\\BG.PNG"), 0, 0, wndSize.cx, wndSize.cy);
+
+
+		HBRUSH hBrush = CreateSolidBrush(RGB(0, 0, 0));         //2
+		SelectObject(g_memDC, hBrush);      //3
+		Rectangle(g_memDC, 140, 140, 300, 300);                         //4
+
+
+		POINT ptDest = { wndRect.left,wndRect.top };
+		BLENDFUNCTION blendFunction;
+		blendFunction.AlphaFormat = AC_SRC_ALPHA;
+		blendFunction.BlendFlags = 0;
+		blendFunction.BlendOp = AC_SRC_OVER;
+		blendFunction.SourceConstantAlpha = 255;
+		UpdateLayeredWindow(hwnd, dc, &ptDest, &wndSize, g_memDC, &POINT{ 0,0 }, 0, &blendFunction, ULW_ALPHA| ULW_COLORKEY);
+
+		EndPaint(hwnd, &ps);
+
+	}
+	break;
+	case WM_DESTROY:
+		PostQuitMessage(0);       /* send a WM_QUIT to the message queue */
+		break;
+	case WM_LBUTTONDOWN:
+		::SendMessage(hwnd, WM_NCLBUTTONDOWN, HTCAPTION, 0);
+		break;
+	default:                      /* for messages that we don't deal with */
+		return DefWindowProc(hwnd, message, wParam, lParam);
+	}
+	return 0;
+}
+————————————————
+/////////////////////
+
+//opengl 透明
+
+#define _WIN32_WINNT 0x0500
+
+#include <windows.h>
+#include <windowsx.h>
+#include <GL/gl.h>
+#include <GL/glu.h>
+
+#include <dwmapi.h>
+
+#pragma comment (lib, "opengl32.lib")
+#pragma comment (lib, "glu32.lib")
+
+#pragma comment (lib, "dwmapi.lib")
+
+#include <assert.h>
+#include <tchar.h>
+
+#ifdef  assert
+#define verify(expr) if(!expr) assert(0)
+#else verify(expr) expr
+#endif
+
+const TCHAR szAppName[]=_T("TransparentGL");
+const TCHAR wcWndName[]=_T("TransparentGL");
+
+HDC hDC;            
+HGLRC m_hrc;        
+int w = 240;
+int h = 240;
+
+BOOL initSC() {
+    glEnable(GL_ALPHA_TEST);        
+    glEnable(GL_DEPTH_TEST);        
+    glEnable(GL_COLOR_MATERIAL);
+
+    glEnable(GL_LIGHTING);          
+    glEnable(GL_LIGHT0);            
+
+    glEnable(GL_BLEND);             
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glClearColor(0, 0, 0, 0);
+
+    return 0;
+}
+
+void resizeSC(int width,int height) {
+    glViewport(0,0,width,height);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+
+    glMatrixMode(GL_MODELVIEW );
+    glLoadIdentity();
+}
+
+BOOL renderSC() {
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+
+    glPushMatrix();
+
+    glColor3f(0, 1, 1);
+    glBegin(GL_TRIANGLES);                              // Drawing Using Triangles
+        glColor3f(1.0f,0.0f,0.0f);                      // Set The Color To Red
+        glVertex3f( 0.0f, 1.0f, 0.0f);                  // Top
+        glColor3f(0.0f,1.0f,0.0f);                      // Set The Color To Green
+        glVertex3f(-1.0f,-1.0f, 0.0f);                  // Bottom Left
+        glColor3f(0.0f,0.0f,1.0f);                      // Set The Color To Blue
+        glVertex3f( 1.0f,-1.0f, 0.0f);                  // Bottom Right
+    glEnd();
+
+    glPopMatrix();
+    glFlush();
+
+    return 0;
+}
+
+BOOL CreateHGLRC(HWND hWnd) {
+    PIXELFORMATDESCRIPTOR pfd = {
+      sizeof(PIXELFORMATDESCRIPTOR),
+      1,                                // Version Number
+      PFD_DRAW_TO_WINDOW      |         // Format Must Support Window
+      PFD_SUPPORT_OPENGL      |         // Format Must Support OpenGL
+      PFD_SUPPORT_COMPOSITION |         // Format Must Support Composition
+      PFD_DOUBLEBUFFER,                 // Must Support Double Buffering
+      PFD_TYPE_RGBA,                    // Request An RGBA Format
+      32,                               // Select Our Color Depth
+      0, 0, 0, 0, 0, 0,                 // Color Bits Ignored
+      8,                                // An Alpha Buffer
+      0,                                // Shift Bit Ignored
+      0,                                // No Accumulation Buffer
+      0, 0, 0, 0,                       // Accumulation Bits Ignored
+      24,                               // 16Bit Z-Buffer (Depth Buffer)
+      8,                                // Some Stencil Buffer
+      0,                                // No Auxiliary Buffer
+      PFD_MAIN_PLANE,                   // Main Drawing Layer
+      0,                                // Reserved
+      0, 0, 0                           // Layer Masks Ignored
+    };     
+
+    HDC hdc = GetDC(hWnd);
+    int PixelFormat = ChoosePixelFormat(hdc, &pfd);
+    if (PixelFormat == 0) {
+      assert(0);
+      return FALSE ;
+    }
+
+    BOOL bResult = SetPixelFormat(hdc, PixelFormat, &pfd);
+    if (bResult==FALSE) {
+      assert(0);
+      return FALSE ;
+    }
+
+    m_hrc = wglCreateContext(hdc);
+    if (!m_hrc){
+      assert(0);
+      return FALSE;
+    }
+
+    ReleaseDC(hWnd, hdc);
+
+    return TRUE;
+}
+
+LRESULT CALLBACK WindowFunc(HWND hWnd,UINT msg, WPARAM wParam, LPARAM lParam) {
+    PAINTSTRUCT ps;
+
+    switch(msg) {
+        case WM_CREATE:
+        break;
+
+        case WM_DESTROY:
+            if(m_hrc) {
+                wglMakeCurrent(NULL, NULL);
+                wglDeleteContext(m_hrc) ;
+            }
+            PostQuitMessage(0) ;
+        break;
+
+        default: 
+            return DefWindowProc(hWnd,msg,wParam,lParam);
+    }
+
+    return 0;
+}
+
+int WINAPI _tWinMain(HINSTANCE hThisInst, HINSTANCE hPrevInst, LPSTR str,int nWinMode) {
+    WNDCLASSEX wc;
+    memset(&wc, 0, sizeof(wc));
+    wc.cbSize = sizeof(WNDCLASSEX);
+    wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+    wc.style = CS_HREDRAW | CS_VREDRAW;
+    wc.lpfnWndProc = (WNDPROC)WindowFunc;
+    wc.cbClsExtra  = 0;
+    wc.cbWndExtra  = 0;
+    wc.hInstance = hThisInst;
+    wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+    wc.hbrBackground = (HBRUSH)CreateSolidBrush(0x00000000);
+    wc.lpszClassName = szAppName;
+
+    if(!RegisterClassEx(&wc)) {
+        MessageBox(NULL, _T("RegisterClassEx - failed"), _T("Error"), MB_OK | MB_ICONERROR);
+        return FALSE;
+    }
+
+    HWND hWnd = CreateWindowEx(WS_EX_APPWINDOW, szAppName, wcWndName,
+                    WS_VISIBLE | WS_POPUP, 200, 150, w, h,
+                    NULL, NULL, hThisInst, NULL);
+
+    if(!hWnd) {
+        MessageBox(NULL, _T("CreateWindowEx - failed"), _T("Error"), MB_OK | MB_ICONERROR);
+        return FALSE;
+    }
+
+    DWM_BLURBEHIND bb = {0};
+    HRGN hRgn = CreateRectRgn(0, 0, -1, -1);
+    bb.dwFlags = DWM_BB_ENABLE | DWM_BB_BLURREGION;
+    bb.hRgnBlur = hRgn;
+    bb.fEnable = TRUE;
+    DwmEnableBlurBehindWindow(hWnd, &bb);
+    
+    CreateHGLRC(hWnd);
+
+    HDC hdc = GetDC(hWnd);
+    wglMakeCurrent(hdc, m_hrc);
+    initSC();
+    resizeSC(w, h);
+    ReleaseDC(hWnd, hdc);
+
+    MSG msg;  
+    while(1) {
+        if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+	        if (msg.message == WM_QUIT)
+				break;
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        }
+        else {
+            HDC hdc = GetDC(hWnd);
+            wglMakeCurrent(hdc, m_hrc);
+
+            renderSC();
+
+            SwapBuffers(hdc);
+            ReleaseDC(hWnd, hdc);
+        }
+    } 
+
+    return (FALSE); 
+}
+————————————————
+版权声明：本文为CSDN博主「小乌龟在大乌龟背上」的原创文章，遵循 CC 4.0 BY-SA 版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/what951006/article/details/79106306
+
+
