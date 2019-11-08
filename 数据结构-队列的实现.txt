@@ -1,0 +1,119 @@
+C/C++ 数据结构之 队列的实现！
+ 
+ 
+1）.顺序队列要简单点，只实现了链式队列~，注释都很详细，主要实现过程如下：
+（1）.初始化Queue。分配内存，队首队尾指向同一处,队首数据不予值
+（2）.入队操作，即将队尾的指向新分配的内存，其它的不变
+（3）.出队操作，就是将队队首的next指向下一个的下一个，因为下一个要被删除
+（4）.清空操作，就是一个while（头指针的next），判断有不有节点，有就删！！
+2).代码：
+template<typename T> struct List
+{
+    List<T> *next;
+    T data;
+};
+
+template<typename T> struct AudioPacketQueue{
+    List<T> *front;
+    List<T> *rear;
+};
+
+template<typename T> int InitQueue(AudioPacketQueue<T>*Q)//分配内存，队首与队尾数据为空
+{
+    Q->front=Q->rear=new  List<T>;
+    if(!Q->front)
+        return 0;
+    Q->front->next=NULL;
+    return 1;
+}
+
+template<typename T> int QueuePut(AudioPacketQueue<T> *Q,T pkt)
+{
+    List<T> *pl= new List<T>;
+    if(!pl)
+        return 0;
+    pl->data= pkt;
+    pl->next = NULL;
+    //新建一个节点
+    Q->rear->next=pl;//插到队列的尾巴上
+    Q->rear=pl;//队列指向刚插的尾巴上
+    return 1;
+}
+template<typename T> int QueueOut(AudioPacketQueue<T> *Q,T &data)
+{
+    List<T> *pl;
+    if(Q->front==Q->rear)//如果是空队
+        return 0;
+    pl=Q->front->next;//队首的下一个
+    data=pl->data; //输出队首下一个的值
+
+    Q->front->next=pl->next; //队首下一个改变为刚刚保存的下一个，即相对于队首的下下一个
+    if(pl==Q->rear)
+        Q->rear=Q->front;
+    delete(pl);
+
+    return 1;
+}
+template<typename T> int QueueFlush(AudioPacketQueue<T> *Q) //清除队列 ，下次使用必须init队列~
+{
+    if(!Q->front)
+        return 0;
+    List<T>* pl=Q->front; //当前队首
+    List<T>* nextpl=Q->front->next;//队首的下一个
+    while(pl)
+    {
+        nextpl=pl->next;//保存当前的下一个
+        delete(pl);
+        Q->front=nextpl; //头结点指向下一个
+        pl=nextpl; //再赋值给当前头队首
+    }
+    Q->front=Q->rear=NULL;
+    return 1;
+}
+template<typename T> int QueueEmpty(AudioPacketQueue<T> *Q)
+{
+    if(!Q->front->next||!Q->front)
+        return 0;
+
+    List<T>* nextpl=Q->front->next;//队首的下一个
+    List<T>* nextpl2=NULL; //用于保存
+    while(nextpl) //队首下一个有数据的时候
+    {
+        nextpl2=nextpl->next; //用于保存准备删除的下一个节点
+        delete nextpl;  //删除当前队首的下一个
+
+        Q->front->next=nextpl2;//队首的指针改变到已删除的下一个节点
+        nextpl=nextpl2; //保存的下一个节点再赋值给当前指针
+        if(!nextpl)//遍历到队尾的下一个为空的时候
+          {
+                Q->front->next=NULL;
+                delete Q->rear;
+                break;
+          }
+    }
+    Q->rear=Q->front;
+    return 1;
+}
+
+int main(int argc, char *argv[])
+{
+    QCoreApplication a(argc, argv);
+
+    AudioPacketQueue<QString> Queue;
+    InitQueue(&Queue);
+    //[0][1] 测试入队数据
+    for(int i=0;i<10;i++)
+    {
+       QueuePut(&Queue,QString("data-%1").arg(i));
+    }
+    //[2][3] 测试出队数据
+    for(int i=0;i<8;i++)
+    {
+        QString text;
+        QueueOut(&Queue,text);
+        qDebug()<<text;
+    }
+    qDebug()<<QueueEmpty(&Queue); //测试队列清空
+    qDebug()<<QueueFlush(&Queue); //测试删除队列
+    return a.exec();
+}
