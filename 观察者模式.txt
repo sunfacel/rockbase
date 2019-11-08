@@ -1,0 +1,84 @@
+观察者模式
+
+智能指针这块东西捡起，随便就撸了个观察者，主要目的还是练习下几个智能指针，unique_ptr，shared_ptr，weak_ptr等。
+
+//2017年11月6日 21:25:38
+
+#include <vecotr>
+#include <iostream>
+using namespace std;
+
+class Base
+{
+public:
+    Base() noexcept{}
+    virtual ~Base(){}
+    virtual void Func() {}
+};
+
+class Derived:public Base
+{
+public:
+    Derived() noexcept {}
+    virtual void Func() { cout << "Derived1:Notify success" << endl; }
+};
+
+class Derived2 :public Base
+{
+public:
+    Derived2() noexcept {}
+    virtual void Func() { cout << "Derived2:Notify success" << endl; }
+};
+
+enum class MakeType:unsigned int{DERIVED1,DERIVED2};
+
+class Factory
+{
+public:
+    auto MakeObject(MakeType type,void *lparam=nullptr,void *wParam=nullptr)
+    {
+        auto Del = [&](Base*pBase) {delete pBase; };
+        unique_ptr<Base,decltype(Del)> uPtr(nullptr,Del);
+
+        switch (type)
+        {
+        case MakeType::DERIVED1:
+            uPtr.reset(new Derived());
+            break;
+        case MakeType::DERIVED2:
+            uPtr.reset(new Derived2());
+            break;
+        default:
+            break;
+        }
+        return uPtr;
+    }
+
+    void NotifyAllFunc()
+    {
+        for (weak_ptr<Base> wPtr:m_vec)
+        {
+            shared_ptr<Base> sPtr= wPtr.lock();
+            if (!wPtr.expired() && sPtr)
+            {
+                sPtr.get()->Func();
+            }
+        }
+    }
+
+    void AddFunc(shared_ptr<Base> pBase) {
+        m_vec.push_back(pBase);
+    }
+    vector<weak_ptr<Base>> m_vec;
+};
+
+int main()
+{
+    Factory fac;//造一个工厂
+    shared_ptr<Base> pObj1 = fac.MakeObject(MakeType::DERIVED1);//造一个目标1
+    shared_ptr<Base> pObj2 = fac.MakeObject(MakeType::DERIVED2);//造一个目标2
+    fac.AddFunc(pObj1);//添加到观察者
+    fac.AddFunc(pObj2);//添加到观察者
+    fac.NotifyAllFunc();//调用所有的被观察对象
+    return 0;
+}
