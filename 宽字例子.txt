@@ -1,0 +1,68 @@
+int _tmain(int argc, _TCHAR* argv[])
+{
+
+	setlocale(LC_ALL,""); 
+
+	wchar_t wt=L'严';
+	wprintf(L"%c\n",wt); //输出wt（单个字符）
+	wchar_t wts[]=L"严重";
+	wprintf(L"%s\n",wts); //输出 wts （字符串）
+
+
+	wchar_t microsoft_t[] = L"Microsoft®";   //所有都是两字节®为 0xAE 00
+	char microsoft[] = "Microsoft®";         //所有都是一个字节，所以®显示不了
+	char tmp[] = "严重";
+    char workTmp = '严';
+    printf("%c\r\n", workTmp);
+
+	printf("%s\r\n", tmp);
+
+	char *mychar = tmp;
+  printf("%2XH %2XH\n",(unsigned char)tmp[0],(unsigned char)tmp[1]);   //需要加unsigned char 把字节的值取出
+
+  printf("%2XH %2XH\n", (unsigned char)*mychar, (unsigned char)* (mychar+1));   //需要加unsigned char 把字节的值取出
+
+
+  int b=(unsigned char)tmp[0]*256+(unsigned char)tmp[1]; //b即为汉字的10进制GB2312编码了
+
+	char convertWChar[64] = { 0x00 };
+	char convertChar[64] = { 0x00 };
+	char convertUChar[64] = { 0x00 };
+	char convertUToUtfChar[64] = { 0x00 };
+	unsigned short convertUftToUnicChar[64] = { 0x00 };
+
+// 	Utf8toUnicode(tmp, convertChar);
+
+   CharSetCodec  *codec = new CharSetCodec();
+   int len = codec->convertGBKToUnicode(tmp, sizeof(tmp), convertWChar, 64);
+   wprintf(L"%s\n",convertWChar); //输出 wts （字符串）
+
+    codec->convertUnicodeToGBK( convertWChar, strlen( convertWChar), convertChar, 64 );
+	printf( "%s\r\n", convertChar);
+    codec->convertGBKToUtf8(tmp, sizeof(tmp), convertUChar, 64);
+	codec->convertUnicodeToUtf8(convertWChar, strlen( convertWChar),convertUToUtfChar, 64);
+
+	//	static int convertUtf8ToUnicode(const char *p_pUtf8, const int p_nUtf8Len, unsigned short *pUniCode, const int p_nOutSize);
+	codec->convertUtf8ToUnicode(convertUToUtfChar, strlen(convertUToUtfChar),  convertUftToUnicChar, 64);
+
+	time_t currtime;
+	struct tm *timer;
+	char buffer[80];
+
+	time( &currtime );
+	timer = localtime( &currtime );
+
+	printf("Locale is: %s\n", setlocale(LC_ALL, "en_GB"));
+	strftime(buffer,80,"%c", timer );
+	printf("Date is: %s\n", buffer);
+
+
+	printf("Locale is: %s\n", setlocale(LC_ALL, "de_DE"));
+	strftime(buffer,80,"%c", timer );
+	printf("Date is: %s\n", buffer);
+
+
+	out();
+	getch();
+	return 0;
+}
