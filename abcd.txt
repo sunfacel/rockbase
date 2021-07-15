@@ -51,5 +51,8 @@ wstring source333 = String2WString( tmp_char);
    内存中，字符串为： 61 00 25 4e cd 91 25 4e cd 91    //25 4e 转为Unicode的编码
 
 
+
+
+
 WCHAR str3[]=L"abcde";    //每个字符两个字节
 WCHAR str4[]=L"严是中国人";    //每个字符占两个字节  严字编码为：25 4e
