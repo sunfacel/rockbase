@@ -32,3 +32,6 @@ $(TARGET): $(OBJECT)
 
 clean:
 	rm $(EXELIB) $(OBJECT)  ./$(TARGET)
+
+
+///////////////////////////////////
