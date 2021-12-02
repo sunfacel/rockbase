@@ -53,3 +53,7 @@ wstring source333 = String2WString( tmp_char);
 
 WCHAR str3[]=L"abcde";    //每个字符两个字节
 WCHAR str4[]=L"严是中国人";    //每个字符占两个字节  严字编码为：25 4e
+
+
+
+////////////////
