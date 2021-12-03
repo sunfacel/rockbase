@@ -10,3 +10,6 @@ tag
 dev的修改
 
 再修改dev
+
+
+-set_bug version
